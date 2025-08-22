@@ -53,7 +53,7 @@ function decodeBase64(str) {
 async function handleApiRequest(request, corsHeaders) {
   const url = new URL(request.url);
 
-  // Base64 for "api.rule34.xxx"
+  // Base64 for "website"
   const encodedDomain = "YXBpLnJ1bGUzNC54eHg=";
   const targetDomain = decodeBase64(encodedDomain);
 
@@ -120,7 +120,7 @@ async function handleAutocompleteRequest(request, corsHeaders) {
     return new Response('Error: The "q" query parameter is missing.', { status: 400, headers: corsHeaders });
   }
 
-  // Base64 for "api.rule34.xxx"
+  // Base64 for "website"
   const encodedDomain = "YXBpLnJ1bGUzNC54eHg=";
   const targetDomain = decodeBase64(encodedDomain);
   const targetAutocompleteUrl = `https://${targetDomain}/autocomplete.php?q=${encodeURIComponent(query)}`;
