@@ -1,5 +1,6 @@
 /**
- * Cloudflare Worker Script to Proxy API and Image Requests
+ * Cloudflare Worker Script to Proxy API, Image, and Autocomplete Requests
+ * Domain is Base64 encoded to avoid having plaintext in the script.
  */
 
 export default {
@@ -26,6 +27,11 @@ export default {
     if (url.pathname === '/image') {
       return handleImageRequest(request, corsHeaders);
     }
+    
+    // New route for autocomplete
+    if (url.pathname === '/autocomplete') {
+        return handleAutocompleteRequest(request, corsHeaders);
+    }
 
     return new Response(getLandingPage(), {
       status: 200,
@@ -47,8 +53,8 @@ function decodeBase64(str) {
 async function handleApiRequest(request, corsHeaders) {
   const url = new URL(request.url);
 
-  // Base64 for URL
-  const encodedDomain = "YXBpLnJ1bGUzNC54eHg="; 
+  // Base64 for "api.rule34.xxx"
+  const encodedDomain = "YXBpLnJ1bGUzNC54eHg=";
   const targetDomain = decodeBase64(encodedDomain);
 
   const targetApiUrl = `https://${targetDomain}/index.php?page=dapi&s=post&q=index${url.search}`;
@@ -103,6 +109,38 @@ async function handleImageRequest(request, corsHeaders) {
   }
 }
 
+/**
+ * Handles autocomplete requests.
+ */
+async function handleAutocompleteRequest(request, corsHeaders) {
+  const url = new URL(request.url);
+  const query = url.searchParams.get('q');
+
+  if (!query) {
+    return new Response('Error: The "q" query parameter is missing.', { status: 400, headers: corsHeaders });
+  }
+
+  // Base64 for "api.rule34.xxx"
+  const encodedDomain = "YXBpLnJ1bGUzNC54eHg=";
+  const targetDomain = decodeBase64(encodedDomain);
+  const targetAutocompleteUrl = `https://${targetDomain}/autocomplete.php?q=${encodeURIComponent(query)}`;
+
+  try {
+    const response = await fetch(targetAutocompleteUrl);
+    
+    const newResponse = new Response(response.body, response);
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      newResponse.headers.set(key, value);
+    }
+    newResponse.headers.set('Content-Type', 'application/json');
+    return newResponse;
+
+  } catch (e) {
+    return new Response(`Error fetching autocomplete data: ${e.message}`, { status: 502, headers: corsHeaders });
+  }
+}
+
+
 function getLandingPage() {
   return `
     <!DOCTYPE html>
@@ -118,7 +156,7 @@ function getLandingPage() {
             p { color: #4b5563; }
             code { background-color: #e5e7eb; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: "Courier New", Courier, monospace; }
             .example { margin-top: 1.5rem; font-size: 0.9rem; }
-            .warning { color: #991b1b; background-color: #fef2f2; padding: 1rem; border-radius: 0.5rem; margin-top: 1.5rem; text-align: left; }
+            .note { color: #991b1b; background-color: #fef2f2; padding: 1rem; border-radius: 0.5rem; margin-top: 1.5rem; text-align: left; }
         </style>
     </head>
     <body>
@@ -126,11 +164,11 @@ function getLandingPage() {
             <h1>M3 Proxy</h1>
             <p>©2025 PGN.</p>
             <div class="example">
-                <p>API equivalent to original website.</p>
-                <p>/api and /image are used.</p>
+                <p>Proxy for API, image, and autocomplete endpoints.</p>
+                <p><code>/api</code>, <code>/image</code>, and <code>/autocomplete</code> are used.</p>
             </div>
-            <div class="warning">
-                <strong>Warning:</strong> Do NOT abuse (or else.)
+            <div class="note">
+                <strong>Note:</strong> API (excluding auto-complete) has limit of 60 req/60 sec.
             </div>
         </div>
     </body>
