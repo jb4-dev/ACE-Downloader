@@ -34,7 +34,7 @@ For the Proxy (cloudflare_worker.js)
 
     Web Browser: To access the Cloudflare dashboard.
 
-🛠️ Setup and Usage
+## Setup and Usage
 1. Cloudflare Worker Setup
 
     Deploy the Worker via Dashboard:
